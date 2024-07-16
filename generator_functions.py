@@ -7,7 +7,6 @@ def csv_array(filename):
     for row in reader:
       for item in row:
         flattened_list.append(int(item))
-    print("length: "+ str(len(flattened_list)))
   return flattened_list
 
 def twos_complement(array, bits):
@@ -24,6 +23,5 @@ def bit_concat(array, valWidth, targetWidth):
         for j in range(int(targetWidth/valWidth)):
             shifted = (array[int((targetWidth/valWidth)*i+j)] << valWidth*j)
             num += shifted
-            print(array[int((targetWidth/valWidth)*i+j)])
         concat_array.append(num)
     return concat_array

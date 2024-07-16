@@ -12,15 +12,17 @@ def decimalToBinary(n, bits):
 #your file path goes here \/
 base_path = 'D:\\CS stuff\\Logic Generator\\'
 file_name = str(input("CSV File name: ") + '.csv')
+array = csv_array(f'{base_path}{file_name}')
 
-Noutputs = int(input("Number of values: "))
-outWidth = int(input("Bit width of values: "))
-hasDecoder = False
-decode = input("Make Decoder? [Y/N]: ")
-if(decode == 'Y' or decode == 'y'): hasDecoder = True
+Noutputs = len(array)
+outWidth = max(array).bit_length()
+if min(array)<0: outWidth+=1 
 
 bitCount = Noutputs*outWidth
+
 Width = int(2**np.floor(np.log2(np.sqrt(bitCount-1))))
+
+
 #int(outWidth*np.ceil(Noutputs/(outWidth*2**np.floor(np.log2(np.sqrt(Noutputs-1))+1))))
 #technically better but broken
 decoderBits = int(np.floor(np.log2(Width/outWidth-1)+1))
@@ -124,13 +126,11 @@ norGate = 1
 #array = [3, 4, 1, 3, 0, 6, 4, 0] # output we want from the ROM
 #[random.randint(0, (2**Width-1)) for _ in range(Width)]
 
-array = csv_array(f'{base_path}{file_name}')
+
 array = twos_complement(array, outWidth)
 array = bit_concat(array, outWidth, Width)
-print(array)
-#max(array).bit_length() # bitwidth of output
+
 bits = Width
-print("bits "+str(bits))
 inputBitwidth = (len(array)-1).bit_length()
 
 prevFlips = [0]*len(array)
@@ -196,8 +196,7 @@ for i in range(1, len(array)):
                 add_connection(1000+i, 9000+(bits-1-j))
         gateCount += 1
 
-if hasDecoder:
-    gateCount+= make_decoder([9000+i for i in range(Width)],outWidth,inputBitwidth)
+gateCount+= make_decoder([9000+i for i in range(Width)],outWidth,inputBitwidth)
 
 
 # print(array)
