@@ -21,6 +21,7 @@ if min(array)<0: outWidth+=1
 bitCount = Noutputs*outWidth
 
 Width = int(2**np.floor(np.log2(np.sqrt(Noutputs-1)))*(outWidth/2))
+if Noutputs <= 4: Width*=2
 
 #int(outWidth*np.ceil(Noutputs/(outWidth*2**np.floor(np.log2(np.sqrt(Noutputs-1))+1))))
 #technically better but broken
