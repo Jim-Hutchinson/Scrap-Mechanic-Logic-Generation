@@ -1,4 +1,5 @@
 import csv
+import numpy as np
 
 def csv_array(filename):
   flattened_list = []
@@ -18,10 +19,16 @@ def twos_complement(array, bits):
         
 def bit_concat(array, valWidth, targetWidth):
     concat_array = []
-    for i in range(int(len(array)*valWidth/targetWidth)):
+    for i in range(int(np.ceil(len(array)*valWidth/targetWidth))):
         num = 0
         for j in range(int(targetWidth/valWidth)):
-            shifted = (array[int((targetWidth/valWidth)*i+j)] << valWidth*j)
-            num += shifted
+            try:
+              shifted = (array[int((targetWidth/valWidth)*i+j)] << valWidth*j)
+              num += shifted
+            except: pass
         concat_array.append(num)
+    print(concat_array)
     return concat_array
+
+def is_set(x, n):
+  return x & 1 << n != 0

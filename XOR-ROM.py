@@ -20,11 +20,11 @@ if min(array)<0: outWidth+=1
 
 bitCount = Noutputs*outWidth
 
-Width = int(2**np.floor(np.log2(np.sqrt(bitCount-1))))
-
+Width = int(2**np.floor(np.log2(np.sqrt(Noutputs-1)))*(outWidth/2))
 
 #int(outWidth*np.ceil(Noutputs/(outWidth*2**np.floor(np.log2(np.sqrt(Noutputs-1))+1))))
 #technically better but broken
+
 decoderBits = int(np.floor(np.log2(Width/outWidth-1)+1))
 gateCount = 0
 bodies = []
@@ -67,9 +67,6 @@ def array_connect(fromArray, toArray):
             childs[index]["controller"]["controllers"].append(
                 {"id": toID}
             ) 
-
-def is_set(x, n):
-  return x & 1 << n != 0
 
 def make_decoder(outputs, outWidth, inWidth):
     gatesAdded = 0
@@ -123,10 +120,6 @@ def make_decoder(outputs, outWidth, inWidth):
 #norGate = int('100',2) # which switch is the NOR gate connected to(converts to int for easier calculations later)
 norGate = 1
 
-#array = [3, 4, 1, 3, 0, 6, 4, 0] # output we want from the ROM
-#[random.randint(0, (2**Width-1)) for _ in range(Width)]
-
-
 array = twos_complement(array, outWidth)
 array = bit_concat(array, outWidth, Width)
 
@@ -151,8 +144,10 @@ for i in range(bits):
     add_gate(-(i%8), np.floor(i/8), 1, 2, color, 9000+(gateCount-inputBitwidth))
     gateCount += 1
 
+placeIndex = 0
 # add NOR gate
 add_gate(0, 1, 0, 4, "111111", 8000)
+placeIndex +=1
 gateCount += 1
 
 # connects from input
@@ -164,7 +159,6 @@ for i in range(inputBitwidth):
 for i in range(bits):
     if decimalToBinary(array[0], bits)[i] == '1':
         add_connection(8000, 9000+(bits-1-i))
-
 
 #      This 1  v   excludes the first array item since it is handled by the NOR gate
 for i in range(1, len(array)):
@@ -183,7 +177,9 @@ for i in range(1, len(array)):
     if outputFlips != '000':
         # print(outputFlips)
         # create logic gate
-        add_gate(-((gateCount-bits-inputBitwidth) % 8), 1+(np.floor((gateCount-bits-inputBitwidth))/8)%(Width/8), -np.floor((gateCount-bits-inputBitwidth)/(Width)), 0, "111111", 1000+i)
+ 
+        add_gate(-(placeIndex % 8), 1+(np.floor(placeIndex/8)%8), -np.floor((gateCount-bits-inputBitwidth)/64), 0, "111111", 1000+i)
+        placeIndex +=1
         
         # connect from input
         for j in range(inputBitwidth):
@@ -198,9 +194,6 @@ for i in range(1, len(array)):
 
 gateCount+= make_decoder([9000+i for i in range(Width)],outWidth,inputBitwidth)
 
-
-# print(array)
-print("Gate Count: " + str(gateCount))
 dictionary = {
     'bodies': [
         {'childs': childs}
@@ -209,3 +202,4 @@ dictionary = {
 
 with open("C:\\Users\\jhutc\\AppData\\Roaming\\Axolot Games\\Scrap Mechanic\\User\\User_76561199013390109\\Blueprints\\ba486fdd-0b6f-4e45-ac78-fab28eaafa35\\blueprint.json", "w") as outfile: 
     json.dump(dictionary, outfile)
+print("Gate Count: " + str(gateCount))
