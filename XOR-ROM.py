@@ -15,7 +15,7 @@ file_name = str(input("CSV File name: ") + '.csv')
 array = csv_array(f'{base_path}{file_name}')
 
 Noutputs = len(array)
-outWidth = max(array).bit_length()
+outWidth = max([abs(num) for num in array]).bit_length()
 if min(array)<0: outWidth+=1 
 
 bitCount = Noutputs*outWidth
