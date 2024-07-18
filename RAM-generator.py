@@ -1,12 +1,10 @@
 import numpy as np
+from generator_functions import *
 import json
 
 bodies = []
 childs = []
 indexes = []
-
-def is_set(x, n):
-  return x & 1 << n != 0
 
 def add_gate(x, y, z, mode, color, id):
     indexes.append(id)
@@ -68,11 +66,15 @@ for i in range(size*width):
 
 # create input AND gates
 inputAnds = [[0 for j in range(size)] for i in range(width)]
+inputs = 0
 for i in range(size*width):
     add_gate(i%width, np.floor(i/width), 0, 0, '0E8031', 600000+i)
     inputAnds[i%width][int(np.floor(i/width))] = 600000+i
     add_connection(600000+i, 900000+i)
     add_connection(800000+i, 600000+i)
+    inputs += 1
+
+print(inputs)
 
 # create output OR gates
 for i in range(width):
@@ -81,10 +83,18 @@ for i in range(size):
     for j in range(width):
         add_connection(700000+i*width+j, 500000+j)
 
-# create clock pulse gate
-add_gate(width, size, 0, 1, 'E2DB13', 69)
-for i in range(size*width):
-    add_connection(69, 600000+i)
+#create write pulse gates
+add_gate(width, size, 0, 1, '323000', 10) #master pulse gate
+count = 0
+for i in range(int(np.ceil(inputs/128))):
+    add_gate(width-i, size, 1, 1, 'E2DB13', 60+i)
+    add_connection(10,60+i)
+    for j in range(128):
+        try: 
+            #connect to corrent number of write gates
+            add_connection(60+i,600000+count)
+            count +=1
+        except: pass
 
 # create input OR gates
 for i in range(width):
@@ -127,6 +137,8 @@ dictionary = {
     ]
 }
 
-with open("C:\\Users\\kaiha\\AppData\\Roaming\\Axolot Games\\Scrap Mechanic\\User\\User_76561198799146619\\Blueprints\\6931a67c-c3bc-43f8-86ea-ffb8c6ae0fc9\\blueprint.json", "w") as outfile: 
+
+
+with open("C:\\Users\\jhutc\\AppData\\Roaming\\Axolot Games\\Scrap Mechanic\\User\\User_76561199013390109\\Blueprints\\ba486fdd-0b6f-4e45-ac78-fab28eaafa35\\blueprint.json", "w") as outfile: 
     json.dump(dictionary, outfile)
 
