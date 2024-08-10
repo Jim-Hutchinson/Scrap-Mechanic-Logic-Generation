@@ -1,174 +1,106 @@
-import random
 import numpy as np
-import json
 from generator_functions import *
+from blueprint import *
 
-def decimalToBinary(n, bits): 
-    binary = bin(n).replace("0b", "")
-    for i in range(bits-len(binary)):
-        binary = "0" + binary
-    return binary
 
-#your file path goes here \/
-base_path = 'D:\\CS stuff\\Logic Generator\\'
-file_name = str(input("CSV File name: ") + '.csv')
-array = csv_array(f'{base_path}{file_name}')
 
-Noutputs = len(array)
-outWidth = max([abs(num) for num in array]).bit_length()
-if min(array)<0: outWidth+=1 
+bp = Blueprint()
 
-bitCount = Noutputs*outWidth
 
-Width = int(2**np.floor(np.log2(np.sqrt(Noutputs-1)))*(outWidth/2))
-if Noutputs <= 4: Width*=2
 
-#int(outWidth*np.ceil(Noutputs/(outWidth*2**np.floor(np.log2(np.sqrt(Noutputs-1))+1))))
-#technically better but broken
-
-decoderBits = int(np.floor(np.log2(Width/outWidth-1)+1))
-gateCount = 0
-bodies = []
-childs = []
-indexes = []
-
-def add_gate(x, y, z, mode, color, id):
-    indexes.append(id)
-    childs.append(
-        {
-          "color": color,
-          "controller": {
-            "active": False,
-            "controllers": [],
-            "id": id,
-            "joints": None,
-            "mode": mode
-          },
-          "pos": {
-            "x": x,
-            "y": y,
-            "z": z
-          },
-          "shapeId": "9f0f56e8-2c31-4d83-996c-d00a9b296c3f",
-          "xaxis": -2,
-          "zaxis": -1
-        }
-    )
-
-def add_connection(fromID, toID):
-    index = indexes.index(fromID)
-    childs[index]["controller"]["controllers"].append(
-        {"id": toID}
-    )
-
-def array_connect(fromArray, toArray):
-    for fromID in fromArray:
-        for toID in toArray:
-            index = indexes.index(fromID)
-            childs[index]["controller"]["controllers"].append(
-                {"id": toID}
-            ) 
-
-def make_decoder(outputs, outWidth, inWidth):
-    gatesAdded = 0
-    #places top row of AND gates
+def make_decoder(outputs, outWidth):
+    # places top row of AND gates
     for i in range(len(outputs)):
-        add_gate(-(i%8),np.floor(i/8),2,0,'DF7F01',5000+i)
-        gatesAdded +=1
-        add_connection(9000+i,5000+i)
+        bp.add_gate(-(i%8), i//8, 2, Mode.AND, Color.ORANGE, 5000+i)
+        bp.connect(9000+i, 5000+i)
 
-    #places top row of OR gates
+    # places top row of OR gates
     for i in range(outWidth):
-        color = '0F2E91'
-        if i==0:
-            color = '4C6FE3'
-        add_gate(-i,0,3,1,color,2000+i)
-        gatesAdded +=1
-        inAnds = [5000+j*outWidth+i for j in range(int(len(outputs)/outWidth))]
-        array_connect(inAnds, [2000+i])
+        bp.add_gate(-i, 0, 3, Mode.OR, Color.BLUE if i==0 else Color.DARK_BLUE, 2000+i)
+        bp.array_connect([5000+j*outWidth+i for j in range(len(outputs)//outWidth)], [2000+i])
 
-    
-    #places gates for decoder
-    for j in range(int(np.floor(np.log2(len(outputs)/outWidth-1)+1))):
-        color = '0E8031'
-        if j==0:
-            color = '68FF88'
-        add_gate(-j,0,0,4, color,3000+j) # NOR gates
-        add_gate(-j,-1,0,0, color,6000+j) # AND gates
-        add_gate(-j,-2,0,1, color,7000+j) # input OR gates
-        add_gate(-j,-3,0,1, color,7500+j) # input OR gates
-        gatesAdded +=4
-        add_connection(7500+j,7000+j)
-        add_connection(7000+j,6000+j)
-        add_connection(7000+j,3000+j)
+    # places gates for decoder
+    it = int(np.floor(np.log2(len(outputs)/outWidth - 1) + 1))
+    for j in range(it):
+        color = Color.LIGHT_GREEN if j==0 else Color.DARK_GREEN
+        bp.add_gate(-j,  0, 0, Mode.NOR, color, 3000+j)
+        bp.add_gate(-j, -1, 0, Mode.AND, color, 6000+j)
+        bp.add_gate(-j, -2, 0, Mode.OR,  color, 7000+j)
+        bp.add_gate(-j, -3, 0, Mode.OR,  color, 7500+j)
+        bp.connect(7500+j, 7000+j)
+        bp.connect(7000+j, 6000+j)
+        bp.connect(7000+j, 3000+j)
 
-        #connect decoder to top gates
+        # connect decoder to top gates
         ands = []
         nors = []
-        andIn = [6000+j]
-        norIn = [3000+j]
         for k in range(int(len(outputs)/outWidth)):
             if is_set(k,j):
                 for l in range(outWidth): ands.append(5000+outWidth*k+l)
             else:
                 for l in range(outWidth): nors.append(5000+outWidth*k+l)
 
-        array_connect(andIn, ands)
-        array_connect(norIn, nors)
+        bp.array_connect([6000+j], ands)
+        bp.array_connect([3000+j], nors)
 
-    return gatesAdded
 
-#norGate = int('100',2) # which switch is the NOR gate connected to(converts to int for easier calculations later)
-norGate = 1
+
+array = csv_array("data/test.csv")
+
+outWidth = max(array, key=lambda n: abs(n)).bit_length()
+outWidth += 1 if min(array) < 0 else 0
+print("outwidth: ", outWidth)
+
+bits = int(2**np.floor(np.log2(np.sqrt(len(array)-1))) * (outWidth/2))
+bits *= 2 if len(array) <= 4 else 1
+print("bits: ", bits)
+
+decoderBits = int(np.floor(np.log2(bits/outWidth-1)+1))
 
 array = twos_complement(array, outWidth)
-array = bit_concat(array, outWidth, Width)
+array = bit_concat(array, outWidth, bits)
 
-bits = Width
 inputBitwidth = (len(array)-1).bit_length()
 
-prevFlips = [0]*len(array)
 
 # create input gates
 for i in range(inputBitwidth):
-    color = "064023"
-    if i == 0:
-        color = "19E753"
-    add_gate(-gateCount-decoderBits, -3, 0, 1, color, gateCount)
-    gateCount += 1
+    bp.add_gate(-bp.count_gates()-decoderBits, -3, 0, Mode.OR, 
+        Color.LIGHT_GREEN if i==0 else Color.DARK_GREEN, 
+        bp.count_gates())
 
 # create output gates
 for i in range(bits):
-    color = "560202"
-    if i == 0:
-        color = "D02525"
-    add_gate(-(i%8), np.floor(i/8), 1, 2, color, 9000+(gateCount-inputBitwidth))
-    gateCount += 1
+    bp.add_gate(-(i%8), i//8, 1, Mode.XOR, 
+        Color.RED if i==0 else Color.DARK_BROWN, 
+        9000+(bp.count_gates()-inputBitwidth))
 
-placeIndex = 0
 # add NOR gate
-add_gate(0, 1, 0, 4, "111111", 8000)
-placeIndex +=1
-gateCount += 1
+bp.add_gate(0, 1, 0, Mode.NOR, Color.BLACK, 8000)
+
+norGate = 1
 
 # connects from input
 for i in range(inputBitwidth):
     if decimalToBinary(norGate, inputBitwidth)[i] == '1':
-        add_connection(inputBitwidth-1-i, 8000)
+        bp.connect(inputBitwidth-1-i, 8000)
 
 # connects to output
 for i in range(bits):
     if decimalToBinary(array[0], bits)[i] == '1':
-        add_connection(8000, 9000+(bits-1-i))
+        bp.connect(8000, 9000+(bits-1-i))
+
+prevFlips = [0] * len(array)
+placeIndex = 1
 
 #      This 1  v   excludes the first array item since it is handled by the NOR gate
 for i in range(1, len(array)):
-    currentFlips = 0 # keeps track of bits that need to flip as we go
-    if i & norGate == 0: # detects when the NOR gate is active
-        currentFlips = array[0] # if so, flip bits corresponding to NOR gate connections(first value)
+    currentFlips = 0                # keeps track of bits that need to flip as we go
+    if i & norGate == 0:            # detects when the NOR gate is active
+        currentFlips = array[0]     # if so, flip bits corresponding to NOR gate connections(first value)
     #      This 1  v   excludes address 0 since no other address will ever contain address 0 
     for j in range(1, i):
-        if i & j == j: # checks address i also contains address j within it
+        if i & j == j:              # checks address i also contains address j within it
             currentFlips ^= prevFlips[j] # if so, incorperate that address's flips too
 
     currentFlips ^= array[i]
@@ -176,31 +108,23 @@ for i in range(1, len(array)):
 
     outputFlips = decimalToBinary(currentFlips, bits)
     if outputFlips != '000':
-        # print(outputFlips)
-        # create logic gate
- 
-        add_gate(-(placeIndex % 8), 1+(np.floor(placeIndex/8)%8), -np.floor((gateCount-bits-inputBitwidth)/64), 0, "111111", 1000+i)
-        placeIndex +=1
+
+        # create logic gate 
+        bp.add_gate(-(placeIndex % 8), 1+(placeIndex//8 % 8), 
+            -(bp.count_gates()-bits-inputBitwidth)//64, Mode.AND, Color.BLACK, 1000+i)
         
         # connect from input
         for j in range(inputBitwidth):
             if decimalToBinary(i, inputBitwidth)[j] == '1':
-                add_connection(inputBitwidth-1-j, 1000+i)
+                bp.connect(inputBitwidth-1-j, 1000+i)
 
         # connect to output
         for j in range(bits):
             if outputFlips[j] == '1':
-                add_connection(1000+i, 9000+(bits-1-j))
-        gateCount += 1
+                bp.connect(1000+i, 9000+(bits-1-j))
 
-gateCount+= make_decoder([9000+i for i in range(Width)],outWidth,inputBitwidth)
 
-dictionary = {
-    'bodies': [
-        {'childs': childs}
-    ]
-}
+make_decoder([9000+i for i in range(bits)], outWidth)
 
-with open("C:\\Users\\jhutc\\AppData\\Roaming\\Axolot Games\\Scrap Mechanic\\User\\User_76561199013390109\\Blueprints\\ba486fdd-0b6f-4e45-ac78-fab28eaafa35\\blueprint.json", "w") as outfile: 
-    json.dump(dictionary, outfile)
-print("Gate Count: " + str(gateCount))
+
+bp.write("blueprints/xor-rom.json")
