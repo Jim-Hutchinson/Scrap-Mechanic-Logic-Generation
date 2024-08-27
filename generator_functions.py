@@ -1,6 +1,8 @@
 import csv
 import numpy as np
 
+
+
 def csv_array(filename):
   flattened_list = []
   with open(filename, newline='') as csvfile:
@@ -10,6 +12,7 @@ def csv_array(filename):
         flattened_list.append(int(item))
   return flattened_list
 
+
 def twos_complement(array, bits):
   conv_array = []
   mask = (1 << bits) - 1
@@ -17,6 +20,7 @@ def twos_complement(array, bits):
     conv_array.append(int(n&mask))
   return conv_array
         
+
 def bit_concat(array, valWidth, targetWidth):
     concat_array = []
     for i in range(int(np.ceil(len(array)*valWidth/targetWidth))):
@@ -27,8 +31,16 @@ def bit_concat(array, valWidth, targetWidth):
               num += shifted
             except: pass
         concat_array.append(num)
-    print(concat_array)
+    #print(concat_array)
     return concat_array
+
 
 def is_set(x, n):
   return x & 1 << n != 0
+
+
+def decimalToBinary(n, bits): 
+    binary = bin(n).replace("0b", "")
+    for i in range(bits-len(binary)):
+        binary = "0" + binary
+    return binary
